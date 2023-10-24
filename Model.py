@@ -108,7 +108,15 @@ class Model:
 
         # Calculate latest HRV and phase duration
         current_ibi_extreme = self.ibi_values_hist[-2]
-        latest_hrv = abs(self.ibi_last_extreme - current_ibi_extreme)
+
+        # Filter out NaN values
+        valid_ibis = self.ibi_values_hist[~np.isnan(self.ibi_values_hist)]
+        # Calculate RMSSD
+        ibi_diffs = np.diff(valid_ibis)
+        rmssd = np.sqrt(np.mean(ibi_diffs ** 2))
+        latest_hrv = rmssd
+        print(rmssd)
+
         seconds_current_phase = np.ceil(self.ibi_latest_phase_duration / 1000.0)
 
         # Exit if the HRV is too low
@@ -190,7 +198,7 @@ class Model:
                 self.hr_extrema_ids[self.hr_extrema_ids < -1] = -1
                 
                 self.update_hrv()
-                # self.update_hrv_spectrum()
+                #self.update_hrv_spectrum()
 
     def update_breathing_rate(self):
 
@@ -352,6 +360,3 @@ class Model:
                     
                     if new_breathing_cycle:
                         self.update_breathing_rate()
-
-
-    
