@@ -5,6 +5,8 @@ import time
 from Pacer import Pacer
 from scipy import signal
 
+from datetime import datetime
+
 class Model:
 
     def __init__(self):
@@ -109,13 +111,27 @@ class Model:
         # Calculate latest HRV and phase duration
         current_ibi_extreme = self.ibi_values_hist[-2]
 
-        # Filter out NaN values
-        valid_ibis = self.ibi_values_hist[~np.isnan(self.ibi_values_hist)]
-        # Calculate RMSSD
-        ibi_diffs = np.diff(valid_ibis)
-        rmssd = np.sqrt(np.mean(ibi_diffs ** 2))
-        latest_hrv = rmssd
-        print(rmssd)
+        # Reverse iterate over ibi_values_hist to get the last 20 non-NaN values
+        last_20_valid_ibis = []
+        for ibi in reversed(self.ibi_values_hist):
+            if not np.isnan(ibi):
+                last_20_valid_ibis.append(ibi)
+            if len(last_20_valid_ibis) == 20:
+                break
+
+        # If we have less than 20 valid values, RMSSD might not be accurate
+        if len(last_20_valid_ibis) < 20:
+            print("Not enough valid IBI values for RMSSD calculation!")
+            latest_hrv = np.nan
+        else:
+            # Convert list to numpy array for computation
+            last_20_valid_ibis = np.array(last_20_valid_ibis)
+
+            # Calculate RMSSD for the last 20 valid IBIs
+            ibi_diffs = np.diff(last_20_valid_ibis)
+            rmssd = np.sqrt(np.mean(ibi_diffs ** 2))
+            latest_hrv = rmssd
+            print(f"{ datetime.now().time()} : {rmssd}")
 
         seconds_current_phase = np.ceil(self.ibi_latest_phase_duration / 1000.0)
 
